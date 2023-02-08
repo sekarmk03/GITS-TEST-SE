@@ -24,7 +24,7 @@ module.exports = {
             const validate = v.validate(body, schema.auth.register) //password min:8
 
             if (validate.length) {
-                return res.status(409).json(validate)
+                return res.status(400).json(validate)
             }
 
             const hashedPass = await bcrypt.hash(password, 10);
