@@ -14,6 +14,9 @@ module.exports = {
       title: {
         type: Sequelize.STRING
       },
+      author_id: {
+        type: Sequelize.INTEGER
+      },
       pub_year: {
         type: Sequelize.INTEGER
       },
