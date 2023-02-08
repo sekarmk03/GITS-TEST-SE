@@ -10,7 +10,7 @@
     "test": "jest",
     "dev": "nodemon src/index.js",
     "start": "node src/index.js",
-    "sq:migrate:refresh": "sequelize db:seed:undo:all && sequelize db:migrate:undo:all && sequelize db:migrate && sequelize db:seed:all"
+    "sqm:refresh": "sequelize db:seed:undo:all && sequelize db:migrate:undo:all && sequelize db:migrate && sequelize db:seed:all"
   },
   "author": "Sekar Madu Kusumawardani",
   "license": "ISC",

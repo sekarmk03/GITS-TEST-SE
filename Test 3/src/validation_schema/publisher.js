@@ -9,6 +9,6 @@ module.exports = {
         name: {optional: true, type: 'string'},
         email: {optional: true, type: 'email'},
         city: {optional: true, type: 'string'},
-        zip_code: {optional: true, type: string}
+        zip_code: {optional: true, type: 'string'}
     },
 }

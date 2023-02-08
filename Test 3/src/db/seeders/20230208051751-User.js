@@ -1,5 +1,5 @@
 'use strict';
-const roles = require('../../utils/roles');
+const roles = require('../../utils/user_role');
 const bcrypt = require('bcrypt');
 
 module.exports = {
@@ -16,7 +16,7 @@ module.exports = {
     await queryInterface.bulkInsert('Users', [
       {
         name: 'Sekar Madu K',
-        email: 'sekarmadukusumawardani@gmail.com',
+        email: 'sekarmadu99@gmail.com',
         password: await bcrypt.hash('secret123', 10),
         role: roles.admin,
         createdAt: new Date(),

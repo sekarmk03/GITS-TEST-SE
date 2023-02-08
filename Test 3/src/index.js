@@ -9,7 +9,7 @@ const app = express();
 const PORT = process.env.PORT;
 process.env.TZ = "Asia/Jakarta";
 
-app.use(morgan("dev"));
+app.use(morgan('dev'));
 app.use(express.json());
 app.use(cors({
     origin: "*",

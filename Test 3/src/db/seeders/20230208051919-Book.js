@@ -48,6 +48,15 @@ module.exports = {
       createdAt: new Date(),
       updatedAt: new Date()
     },
+    {
+      isbn: "978-979-1227-78-0",
+      title: "Perahu Kertas",
+      author_id: 4,
+      pub_year: 2014,
+      pub_id: 3,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    },
    ], {});
   },
 

@@ -16,7 +16,7 @@ module.exports = {
                     [sort, type]
                 ],
                 where: {
-                    name: {
+                    title: {
                         [Op.iLike]: `%${search}%`
                     }
                 },
@@ -37,7 +37,7 @@ module.exports = {
             return res.status(200).json({
                 status: 'OK',
                 message: 'Get All Books Success',
-                data: books.rows
+                data: books
             });
         } catch (err) {
             next(err);

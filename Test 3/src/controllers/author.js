@@ -23,11 +23,11 @@ module.exports = {
                 include: {
                     model: Book,
                     as: 'books',
-                    attributes: ['title', 'pub_year', 'publisher'],
+                    attributes: ['title', 'pub_year'],
                     include: {
                         model: Publisher,
                         as: 'publisher',
-                        include: ['name', 'city']
+                        attributes: ['name', 'city']
                     }
                 }
             });
@@ -35,7 +35,7 @@ module.exports = {
             return res.status(200).json({
                 status: 'OK',
                 message: 'Get All Authors Success',
-                data: authors.rows
+                data: authors
             });
         } catch (err) {
             next(err);
@@ -50,11 +50,11 @@ module.exports = {
                 include: {
                     model: Book,
                     as: 'books',
-                    attributes: ['title', 'pub_year', 'publisher'],
+                    attributes: ['title', 'pub_year'],
                     include: {
                         model: Publisher,
                         as: 'publisher',
-                        include: ['name', 'city']
+                        attributes: ['name', 'city']
                     }
                 }
             });
