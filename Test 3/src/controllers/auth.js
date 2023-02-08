@@ -37,7 +37,7 @@ module.exports = {
             });
 
             return res.status(201).json({
-                status: 'OK',
+                status: 'CREATED',
                 message: 'User Registered',
                 data: newUser
             });
@@ -72,7 +72,7 @@ module.exports = {
             const currentUser = req.user;
 
             return res.status(200).json({
-                status: true,
+                status: 'OK',
                 message: 'user found',
                 data: {
                     id: currentUser.id,

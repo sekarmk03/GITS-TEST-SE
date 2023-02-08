@@ -23,7 +23,7 @@ app.use('/api', router);
 
 app.use((req, res, next) => {
     return res.status(404).json({
-        status: 'BAD_REQUEST',
+        status: 'NOT_FOUND',
         message: 'Resource Not Found',
         data: null
     });
