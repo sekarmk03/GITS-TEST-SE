@@ -8,10 +8,15 @@ module.exports = {
     index: async (req, res, next) => {
         try {
             let {
-                sort = "name", type = "ASC", search = ""
+                sort = "name", type = "ASC", search = "", page  = "1", limit = "10"
             } = req.query;
 
-            const authors = await Author.findAll({
+            page = parseInt(page);
+            limit = parseInt(limit);
+            let start = 0 + (page - 1) * limit;
+            let end = page * limit;
+
+            const authors = await Author.findAndCountAll({
                 order: [
                     [sort, type]
                 ],
@@ -29,12 +34,32 @@ module.exports = {
                         as: 'publisher',
                         attributes: ['name', 'city']
                     }
-                }
+                },
+                limit: limit,
+                offset: start
             });
+
+            let count = authors.count;
+            let pagination = {};
+            pagination.totalRows = count;
+            pagination.totalPages = Math.ceil(count/limit);
+            pagination.thisPageRows = authors.rows.length;
+
+            if (end < count) {
+                pagination.next = {
+                    page: page + 1
+                }
+            }
+            if (start > 0) {
+                pagination.prev = {
+                    page: page - 1
+                }
+            }
 
             return res.status(200).json({
                 status: 'OK',
                 message: 'Get All Authors Success',
+                pagination,
                 data: authors
             });
         } catch (err) {
