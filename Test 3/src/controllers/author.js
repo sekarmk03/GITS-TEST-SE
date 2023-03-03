@@ -2,6 +2,7 @@ const { Author, Book, Publisher } = require('../models');
 const { Op } = require('sequelize');
 const schema = require('../validation_schema');
 const Validator = require('fastest-validator');
+const halson = require('halson');
 const v = new Validator;
 
 module.exports = {
@@ -28,7 +29,7 @@ module.exports = {
                 include: {
                     model: Book,
                     as: 'books',
-                    attributes: ['title', 'pub_year'],
+                    attributes: ['id', 'isbn', 'title', 'pub_year'],
                     include: {
                         model: Publisher,
                         as: 'publisher',
@@ -56,12 +57,24 @@ module.exports = {
                 }
             }
 
-            return res.status(200).json({
+            const authorResources = authors.rows.map((author) => {
+                const authorResource = halson(author.toJSON()).addLink('self', `/authors/${author.id}`).addLink('books', `/authors/${author.id}/books`);
+
+                return authorResource;
+            });
+
+            const response = {
                 status: 'OK',
                 message: 'Get All Authors Success',
                 pagination,
-                data: authors
-            });
+                data: authorResources,
+                links: {
+                    self: {href: req.originalUrl},
+                    collection: {href: '/authors'}
+                }
+            }
+
+            return res.status(200).json(response);
         } catch (err) {
             next(err);
         }
@@ -75,7 +88,7 @@ module.exports = {
                 include: {
                     model: Book,
                     as: 'books',
-                    attributes: ['title', 'pub_year'],
+                    attributes: ['id', 'isbn', 'title', 'pub_year'],
                     include: {
                         model: Publisher,
                         as: 'publisher',
@@ -92,11 +105,50 @@ module.exports = {
                 });
             }
 
-            return res.status(200).json({
+            const authorResource = halson(author.toJSON()).addLink('self', `/authors/${author.id}`).addLink('books', `/authors/${author.id}/books`);
+
+            const books = author.books.map((book) => {
+                return halson(book.toJSON()).addLink('self', `/books/${book.id}`).addLink('author', `/authors/${id}`);
+            });
+
+            const response = {
                 status: 'OK',
                 message: 'Get Author Success',
-                data: author.get()
-            });
+                data: { ...authorResource, books },
+                links: {
+                    self: {href: req.originalUrl},
+                    collection: {href: '/authors'}
+                }
+            }
+
+            return res.status(200).json(response);
+        } catch (err) {
+            next(err);
+        }
+    },
+
+    getBooks: async (req, res, next) => {
+        try {
+            const { id } = req.params;
+            const booksAuthor = await findAll({where: {author_id: id}});
+            
+            const bookAuthorResources = booksAuthor.map((book) => {
+                const bookAuthorResource = halson(book.toJSON()).addLink('self', `/books/${book.id}`).addLink('author', `/authors/${id}`);
+
+                return bookAuthorResource;
+            })
+
+            const response = {
+                status: 'OK',
+                message: 'Get Books Author Success',
+                data: bookAuthorResources,
+                links: {
+                    self: {href: req.originalUrl},
+                    collection: {href: '/authors'}
+                }
+            }
+
+            return res.status(200).json(response);
         } catch (err) {
             next(err);
         }
@@ -120,11 +172,20 @@ module.exports = {
                 gender
             });
 
-            return res.status(201).json({
+            const authorResource = halson(created.toJSON()).addLink('self', `/authors/${created.id}`).addLink('books', `/authors/${created.id}/books`);
+
+            const response = {
                 status: 'CREATED',
                 message: 'New Author Created',
-                data: created
-            });
+                data: authorResource,
+                links: {
+                    self: {href: req.originalUrl},
+                    collection: {href: '/authors'},
+                    created: {href: `/authors/${created.id}`}
+                }
+            }
+
+            return res.status(201).json(response);
         } catch (err) {
             next(err);
         }
@@ -156,22 +217,27 @@ module.exports = {
             if (!age) age = author.age;
             if (!gender) gender = author.gender;
 
-            const updated = await Author.update({
+            await author.update({
                 name,
                 email,
                 age,
                 gender
-            }, {
-                where: {
-                    id: id
-                }
-            })
+            });
 
-            return res.status(200).json({
+            const authorResource = halson(author.toJSON()).addLink('self', `/authors/${author.id}`).addLink('books', `/authors/${author.id}/books`);
+
+            const response = {
                 status: 'OK',
                 message: 'Update Author Success',
-                data: updated
-            })
+                data: authorResource,
+                links: {
+                    self: {href: req.originalUrl},
+                    collection: {href: '/authors'},
+                    updated: {href: `/authors/${author.id}`}
+                }
+            }
+
+            return res.status(200).json(response);
         } catch (err) {
             next(err);
         }
@@ -195,17 +261,20 @@ module.exports = {
                 });
             }
 
-            const deleted = await Author.destroy({
-                where: {
-                    id: id
-                }
-            });
+            author.destroy();
 
-            return res.status(200).json({
+            const response = {
                 status: 'OK',
                 message: 'Delete Author Success',
-                data: deleted
-            });
+                data: null,
+                links: {
+                    self: {href: req.originalUrl},
+                    collection: {href: '/authors'},
+                    deleted: {href: `/authors/${author.id}`}
+                }
+            }
+
+            return res.status(200).json(response);
         } catch (err) {
             next(err);
         }

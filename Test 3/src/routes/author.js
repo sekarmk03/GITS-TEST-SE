@@ -10,6 +10,9 @@ router.get('/', authorize(), c.author.index)
 // get detail author data
 router.get('/:id', authorize(), c.author.show)
 
+// get books per author
+router.get('/:id/books', authorize(), c.author.getBooks);
+
 // create author data
 router.post('/', authorize([roles.admin, roles.superadmin]), c.author.create)
 

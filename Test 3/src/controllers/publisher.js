@@ -2,6 +2,7 @@ const { Publisher, Book, Author } = require('../models');
 const { Op } = require('sequelize');
 const schema = require('../validation_schema');
 const Validator = require('fastest-validator');
+const halson = require('halson');
 const v = new Validator;
 
 module.exports = {
@@ -28,7 +29,7 @@ module.exports = {
                 include: {
                     model: Book,
                     as: 'books',
-                    attributes: ['title', 'pub_year'],
+                    attributes: ['id', 'isbn', 'title', 'pub_year'],
                     include: {
                         model: Author,
                         as: 'author',
@@ -56,12 +57,24 @@ module.exports = {
                 }
             }
 
-            return res.status(200).json({
+            const publisherResources = publishers.rows.map((pub) => {
+                const publisherResource = halson(pub.toJSON()).addLink('self', `/publishers/${pub.id}`).addLink('books', `/publishers/${pub.id}/books`);
+
+                return publisherResource;
+            });
+
+            const response = {
                 status: 'OK',
                 message: 'Get All Publishers Success',
                 pagination,
-                data: publishers
-            });
+                data: publisherResources,
+                links: {
+                    self: {href: req.originalUrl},
+                    collection: {href: '/publishers'}
+                }
+            };
+
+            return res.status(200).json(response);
         } catch (err) {
             next(err);
         }
@@ -75,7 +88,7 @@ module.exports = {
                 include: {
                     model: Book,
                     as: 'books',
-                    attributes: ['title', 'pub_year'],
+                    attributes: ['id', 'isbn', 'title', 'pub_year'],
                     include: {
                         model: Author,
                         as: 'author',
@@ -92,11 +105,50 @@ module.exports = {
                 });
             }
 
-            return res.status(200).json({
+            const publisherResource = halson(publisher.toJSON()).addLink('self', `/publishers/${publisher.id}`).addLink('books', `/publishers/${publisher.id}/books`);
+
+            const books = publisher.books.map((book) => {
+                return halson(book.toJSON()).addLink('self', `/books/${book.id}`).addLink('publisher', `/publishers/${id}`);
+            });
+
+            const response = {
                 status: 'OK',
                 message: 'Get Publisher Success',
-                data: publisher.get()
-            });
+                data: { ...publisherResource, books },
+                links: {
+                    self: {href: req.originalUrl},
+                    collection: {href: '/publishers'}
+                }
+            }
+
+            return res.status(200).json(response);
+        } catch (err) {
+            next(err);
+        }
+    },
+
+    getBooks: async (req, res, next) => {
+        try {
+            const { id } = req.params;
+            const booksPub = await findAll({where: {pub_id: id}});
+            
+            const bookPubResources = booksPub.map((book) => {
+                const bookPubResource = halson(book.toJSON()).addLink('self', `/books/${book.id}`).addLink('publisher', `/publishers/${id}`);
+
+                return bookPubResource;
+            })
+
+            const response = {
+                status: 'OK',
+                message: 'Get Books Publisher Success',
+                data: bookPubResources,
+                links: {
+                    self: {href: req.originalUrl},
+                    collection: {href: '/publishers'}
+                }
+            }
+
+            return res.status(200).json(response);
         } catch (err) {
             next(err);
         }
@@ -120,11 +172,20 @@ module.exports = {
                 zip_code
             });
 
-            return res.status(201).json({
+            const publisherResource = halson(created.toJSON()).addLink('self', `/publishers/${created.id}`).addLink('books', `/publishers/${created.id}/books`);
+
+            const response = {
                 status: 'CREATED',
                 message: 'New Publisher Created',
-                data: created
-            });
+                data: publisherResource,
+                links: {
+                    self: {href: req.originalUrl},
+                    collection: {href: '/publishers'},
+                    created: {href: `/publishers/${created.id}`}
+                }
+            }
+
+            return res.status(201).json(response);
         } catch (err) {
             next(err);
         }
@@ -156,22 +217,27 @@ module.exports = {
             if (!city) city = publisher.city;
             if (!zip_code) zip_code = publisher.zip_code;
 
-            const updated = await Publisher.update({
+            await publisher.update({
                 name,
                 email,
                 city,
                 zip_code
-            }, {
-                where: {
-                    id: id
-                }
-            })
+            });
 
-            return res.status(200).json({
+            const publisherResource = halson(publisher.toJSON()).addLink('self', `/publishers/${publisher.id}`).addLink('books', `/publishers/${publisher.id}/books`);
+
+            const response = {
                 status: 'OK',
                 message: 'Update Publisher Success',
-                data: updated
-            })
+                data: publisherResource,
+                links: {
+                    self: {href: req.originalUrl},
+                    collection: {href: '/publishers'},
+                    updated: {href: `/publishers/${publisher.id}`}
+                }
+            }
+
+            return res.status(200).json(response);
         } catch (err) {
             next(err);
         }
@@ -195,17 +261,20 @@ module.exports = {
                 });
             }
 
-            const deleted = await Publisher.destroy({
-                where: {
-                    id: id
-                }
-            });
+            await publisher.destroy();
 
-            return res.status(200).json({
+            const response = {
                 status: 'OK',
                 message: 'Delete Publisher Success',
-                data: deleted
-            });
+                data: null,
+                links: {
+                    self: {href: req.originalUrl},
+                    collection: {href: '/publishers'},
+                    deleted: {href: `/publishers/${publisher.id}`}
+                }
+            }
+
+            return res.status(200).json(response);
         } catch (err) {
             next(err);
         }

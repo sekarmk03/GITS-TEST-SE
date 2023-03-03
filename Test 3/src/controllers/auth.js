@@ -39,7 +39,16 @@ module.exports = {
             return res.status(201).json({
                 status: 'CREATED',
                 message: 'User Registered',
-                data: newUser
+                _links: {
+                    login: '/auth/login',
+                    check_user: '/auth/whoami'
+                },
+                data: {
+                    id: newUser.id,
+                    name: newUser.email,
+                    password: newUser.password,
+                    role: newUser.role,
+                }
             });
         } catch (err) {
             next(err);
@@ -54,12 +63,16 @@ module.exports = {
             return res.status(200).json({
                 status: 'OK',
                 message: 'Login Success',
+                _links: {
+                    register: '/auth/register',
+                    check_user: '/auth/whoami'
+                },
                 data: {
                     id: user.id,
                     name: user.name,
                     email: user.email,
                     role: user.role,
-                    token: accessToken
+                    token: accessToken,
                 }
             });
         } catch (err) {
@@ -74,11 +87,15 @@ module.exports = {
             return res.status(200).json({
                 status: 'OK',
                 message: 'user found',
+                _links: {
+                    login: '/auth/login',
+                    register: '/auth/register'
+                },
                 data: {
                     id: currentUser.id,
                     name: currentUser.name,
                     email: currentUser.email,
-                    role: currentUser.role
+                    role: currentUser.role,
                 }
             });
         } catch (err) {
