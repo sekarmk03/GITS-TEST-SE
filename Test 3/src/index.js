@@ -19,7 +19,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // err handler
-app.use('/api', router);
+app.use('/api/v1', router);
 
 app.use((req, res, next) => {
     return res.status(404).json({

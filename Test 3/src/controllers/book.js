@@ -2,16 +2,22 @@ const { Book, Author, Publisher } = require('../models');
 const { Op } = require('sequelize');
 const schema = require('../validation_schema');
 const Validator = require('fastest-validator');
+const halson = require('halson');
 const v = new Validator;
 
 module.exports = {
     index: async (req, res, next) => {
         try {
             let {
-                sort = "title", type = "ASC", search = ""
+                sort = "title", type = "ASC", search = "", page = "1", limit = "10"
             } = req.query;
 
-            const books = await Book.findAll({
+            page = parseInt(page);
+            limit = parseInt(limit);
+            let start = 0 + (page - 1) * limit;
+            let end = page * limit;
+
+            const books = await Book.findAndCountAll({
                 order: [
                     [sort, type]
                 ],
@@ -31,14 +37,46 @@ module.exports = {
                         as: 'publisher',
                         attributes: ['name', 'city']
                     }
-                ]
+                ],
+                limit: limit,
+                offset: start
             });
 
-            return res.status(200).json({
+            let count = books.count;
+            let pagination = {};
+            pagination.totalRows = count;
+            pagination.totalPages = Math.ceil(count/limit);
+            pagination.thisPageRows = books.rows.length;
+
+            if (end < count) {
+                pagination.next = {
+                    page: page + 1
+                }
+            }
+            if (start > 0) {
+                pagination.prev = {
+                    page: page - 1
+                }
+            }
+
+            const bookResources = books.rows.map((book) => {
+                const bookResource = halson(book.toJSON()).addLink('self', `/books/${book.id}`).addLink('author', `/authors/${book.author_id}`);
+
+                return bookResource;
+            });
+
+            const response = {
                 status: 'OK',
                 message: 'Get All Books Success',
-                data: books
-            });
+                pagination,
+                data: bookResources,
+                links: {
+                    self: {href: req.originalUrl},
+                    collection: {href: '/books'}
+                }
+            }
+
+            return res.status(200).json(response);
         } catch (err) {
             next(err);
         }
@@ -71,11 +109,19 @@ module.exports = {
                 });
             }
 
-            return res.status(200).json({
+            const bookResource = halson(book.toJSON()).addLink('self', `/books/${book.id}`).addLink('author', `/authors/${book.author_id}`);
+
+            const response = {
                 status: 'OK',
                 message: 'Get Book Success',
-                data: book.get()
-            });
+                data: bookResource,
+                links: {
+                    self: {href: req.originalUrl},
+                    collection: {href: '/books'}
+                }
+            };
+
+            return res.status(200).json(response);
         } catch (err) {
             next(err);
         }
@@ -105,15 +151,25 @@ module.exports = {
             const created = await Book.create({
                 isbn,
                 title,
+                author_id,
                 pub_year,
                 pub_id
             });
 
-            return res.status(201).json({
+            const bookResource = halson(created.toJSON()).addLink('self', `/books/${created.id}`).addLink('author', `/authors/${created.author_id}`);
+
+            const response = {
                 status: 'CREATED',
                 message: 'New Book Created',
-                data: created
-            });
+                data: bookResource,
+                links: {
+                    self: {href: req.originalUrl},
+                    collection: {href: '/books'},
+                    created: {href: `/books/${created.id}`}
+                }
+            };
+
+            return res.status(201).json(response);
         } catch (err) {
             next(err);
         }
@@ -145,22 +201,27 @@ module.exports = {
             if (!pub_year) pub_year = book.pub_year;
             if (!pub_id) pub_id = book.pub_id;
 
-            const updated = await Book.update({
+            await book.update({
                 isbn,
                 title,
                 pub_year,
                 pub_id
-            }, {
-                where: {
-                    id: id
-                }
-            })
+            });
 
-            return res.status(200).json({
+            const bookResource = halson(book.toJSON()).addLink('self', `/books/${book.id}`).addLink('author', `/authors/${book.author_id}`);
+
+            const response = {
                 status: 'OK',
                 message: 'Update Book Success',
-                data: updated
-            })
+                data: bookResource,
+                links: {
+                    self: {href: req.originalUrl},
+                    collection: {href: '/books'},
+                    updated: {href: `/books/${book.id}`}
+                }
+            }
+
+            return res.status(200).json(response);
         } catch (err) {
             next(err);
         }
@@ -184,17 +245,20 @@ module.exports = {
                 });
             }
 
-            const deleted = await Book.destroy({
-                where: {
-                    id: id
-                }
-            });
+            await book.destroy();
 
-            return res.status(200).json({
+            const response = {
                 status: 'OK',
                 message: 'Delete Book Success',
-                data: deleted
-            });
+                data: null,
+                links: {
+                    self: {href: req.originalUrl},
+                    collection: {href: '/books'},
+                    deleted: {href: `/books/${book.id}`}
+                }
+            };
+
+            return res.status(200).json(response);
         } catch (err) {
             next(err);
         }
